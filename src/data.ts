@@ -1,91 +1,202 @@
-// Mind map data extracted from ikigai project structure
-// Source: README.md, PROJECTS.md, profile.md, now.md, contacts/, decisions/
+export interface MindmapNode {
+  name: string;
+  children?: MindmapNode[];
+  _collapsed?: boolean;
+}
 
-export const mindmapMarkdown = `
-# Alex Razbakov
+export const mindmapData: MindmapNode = {
+  name: 'Alex Razbakov',
+  children: [
+    {
+      name: 'Mission & Vision',
+      children: [
+        { name: 'Create tools that outlive me' },
+        { name: 'Products people pay for' },
+        { name: 'Lessons people learn from' },
+        { name: 'Financial independence' },
+        { name: 'Live on own terms' },
+      ],
+    },
+    {
+      name: 'OKRs Q2 2026',
+      children: [
+        {
+          name: 'O1: WeDance Business',
+          children: [
+            { name: '50 paid festival users' },
+            { name: 'Product strategy documented' },
+            { name: 'SDTV homepage live' },
+          ],
+        },
+        {
+          name: 'O2: Side-project System',
+          children: [
+            { name: 'Daily check-ins 5x/week' },
+            { name: 'Weekly review Saturdays' },
+            { name: 'One more product strategy' },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'Projects',
+      children: [
+        {
+          name: 'High Priority',
+          children: [
+            { name: 'WeDance' },
+            { name: 'SDTV' },
+          ],
+        },
+        {
+          name: 'In Progress',
+          children: [
+            { name: 'call-agent' },
+            { name: 'voice-assistant' },
+            { name: 'tasks-dashboard' },
+            { name: 'dancegods' },
+            { name: 'razbakov.com' },
+            { name: 'brievcase' },
+          ],
+        },
+        {
+          name: 'Slower Burn',
+          children: [
+            { name: 'skill-mix' },
+            { name: 'mystery-games' },
+            { name: 'facts-collector' },
+            { name: 'smm-manager' },
+            { name: 'web100' },
+            { name: 'montuno-club' },
+            { name: 'ai-study-group' },
+          ],
+        },
+        {
+          name: 'Archive',
+          children: [
+            { name: 'learn-by-doing-academy' },
+            { name: 'moneydo.vip' },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'Values',
+      children: [
+        { name: 'Connection' },
+        { name: 'Creation > Consumption' },
+        { name: 'Autonomy' },
+        { name: 'Practical application' },
+        { name: 'Cultural bridges' },
+      ],
+    },
+    {
+      name: 'Focus Areas',
+      children: [
+        { name: 'Spirituality' },
+        { name: 'Family & Friends' },
+        { name: 'Fun & Recreation' },
+      ],
+    },
+    {
+      name: 'People',
+      children: [
+        { name: 'Kirill Korshikov' },
+        { name: 'Amado' },
+        { name: 'CSSF Rovinj' },
+        { name: 'Cubaila Viena' },
+        { name: 'Dmitry Belkov' },
+        { name: 'Yo Vengo de Cuba' },
+      ],
+    },
+    {
+      name: 'Decisions',
+      children: [
+        { name: 'ADR 001: Planning' },
+        { name: 'ADR 002: WeDance Crisis' },
+        { name: 'ADR 003: Motivation' },
+      ],
+    },
+    {
+      name: 'Profile',
+      children: [
+        { name: 'ENFJ-A' },
+        { name: 'Senior Fullstack Dev' },
+        { name: 'Munich, Germany' },
+        { name: '5 languages' },
+      ],
+    },
+  ],
+};
 
-## Mission
-- Create tools and knowledge that outlive me
-- Products people pay for, lessons people learn from
-
-## Vision
-- Financially independent through own products
-- Free to choose what to work on
-- Live on own terms
-
-## OKRs Q2 2026
-
-### O1: Prove WeDance can be a business
-- KR: 50 paid festival users (EUR 1/festival) across 3+ festivals
-- KR: Product strategy, JTBD, user journey documented
-- KR: Social Dance TV homepage live
-
-### O2: Reliable system for side-project progress
-- KR: Daily check-ins 5x/week (8+ weeks)
-- KR: Weekly review every Saturday (12 weeks)
-- KR: One additional product strategy defined
-
-## Projects
-
-### Active High Priority
-- **WeDance** -- Dance community platform (3K users). Meneate festival validation Mar 26
-- **SDTV** -- Social Dance TV / Photo Land. Dropbox-backed video platform
-
-### Active In Progress
-- **call-agent** -- Callbell voice AI concierge
-- **voice-assistant** -- Butler local voice assistant (OpenAI Realtime API)
-- **tasks-dashboard** -- AI agent monitoring UI
-- **dancegods** -- Cuban dance school website (live)
-- **razbakov.com** -- Personal portfolio + blog (Nuxt 3)
-- **brievcase** -- AI automation platform for teams
-
-### Slower Burn
-- **skill-mix** -- AI skill management (Electron + Vue 3)
-- **mystery-games** -- Mafia game nights (Munich)
-- **facts-collector** -- LLM event extraction pipeline
-- **smm-manager** -- AI Social Media Manager
-- **web100** -- EUR 100 micro-agency websites
-- **montuno-club** -- Salsa Cubana classes
-- **ai-study-group** -- Dev AI sessions + YouTube
-
-### Archive Candidates
-- **learn-by-doing-academy** -- Project-based education (13mo stale)
-- **moneydo.vip** -- Budget planner Kakeibo (5yr stale)
-
-## Values
-- Connection: bringing people together
-- Creation over consumption
-- Autonomy: own direction, own pace
-- Practical application over speculation
-- Cultural bridges
-
-## Focus Areas (Feb 2026)
-- **Spirituality** (score: 3) -- Reconnect with purpose
-- **Family & Friends** (score: 3) -- Find my people
-- **Fun & Recreation** (score: 3) -- Rediscover play
-
-## Ikigai Hypothesis
-- Building technology platforms
-- Creating human connection
-- Through culture and movement
-
-## People
-- Kirill Korshikov -- WeDance partner (50/50), SDTV
-- Amado -- Dance Gods Company owner
-- CSSF Rovinj -- Festival contact
-- Cubaila Viena -- Festival contact
-- Dmitry Belkov -- Collaborator
-- Yo Vengo de Cuba -- Festival contact
-
-## Decisions
-- ADR 001: Planning Framework
-- ADR 002: WeDance Crisis 2025
-- ADR 003: Motivation Patterns 2025
-
-## Profile
-- ENFJ-A ("The Protagonist")
-- Senior Fullstack Developer at OMMAX
-- Languages: Ukrainian, Russian, German, English, Spanish
-- Location: Munich, Germany
-- Skills: Vue.js, Nuxt, Firebase, Postgres, AI integration
-`;
+export const projectDetails: Record<string, { description: string; status: string; workspace?: string; nextActions?: string[] }> = {
+  'WeDance': {
+    description: 'Dance community platform (3,000 users). Meetup Planner + Festival Schedule. Nuxt 4, Vue 3, Tailwind CSS 4.',
+    status: 'Active - High Priority',
+    workspace: '~/Projects/WeDance',
+    nextActions: ['Build activities page for Meneate', 'Build payment flow (EUR 1/festival)', 'Run Playwright BDD tests'],
+  },
+  'SDTV': {
+    description: 'Platform for a videographer to sell dance festival videos. Dropbox-backed, Nuxt v4, tRPC, Prisma.',
+    status: 'Active - High Priority',
+    workspace: '~/Projects/sdtv',
+    nextActions: ['Fix Dropbox sync in prod', 'Disable Vercel deployment protection', 'Send to partner'],
+  },
+  'call-agent': {
+    description: 'Callbell -- voice AI concierge JS plugin. Visitors scan QR, get voice call, AI navigates website.',
+    status: 'Active - In Progress',
+    workspace: '~/Projects/call-agent',
+    nextActions: ['Write BDD scenarios for MVP', 'Build landing page', 'Create marketing campaign'],
+  },
+  'voice-assistant': {
+    description: 'Butler -- local HTTPS voice assistant using OpenAI Realtime API (WebRTC). AI chief of staff.',
+    status: 'Active - In Progress',
+    workspace: '~/Projects/voice-assistant',
+    nextActions: ['Externalize system prompt', 'Replace hardcoded TLS certs', 'Add README'],
+  },
+  'tasks-dashboard': {
+    description: 'Local web UI for monitoring AI coding agents. Displays tasks, streams live tmux output.',
+    status: 'Active - In Progress',
+    workspace: '~/Projects/tasks-dashboard',
+    nextActions: ['Add authentication', 'Persist suggestions to disk', 'Add full log viewer'],
+  },
+  'dancegods': {
+    description: 'Website for Cuban dance school Dance Gods Company. Nuxt 3, Tailwind, live in production.',
+    status: 'Active - In Progress',
+    workspace: '~/Projects/dancegods',
+    nextActions: ['Complete German content parity', 'Add Spanish locale', 'Post Caribbean Urban Fire recap'],
+  },
+  'razbakov.com': {
+    description: 'Personal site + portfolio. Nuxt 3, @nuxt/content, blog posts back to 2016.',
+    status: 'Active - In Progress',
+    workspace: '~/Projects/razbakov.com',
+    nextActions: ['Add blog posts aligned with OKRs', 'Audit projects section', 'Review i18n coverage'],
+  },
+  'brievcase': {
+    description: 'AI automation platform for teams. Chat with Git-connected projects from browser/Slack/Teams.',
+    status: 'Stale',
+    workspace: '~/Projects/brievcase',
+    nextActions: ['Drive traffic to landing page', 'Define first paid customer milestone', 'Resume sprint cadence'],
+  },
+  'skill-mix': {
+    description: 'AI skill management layer. Discover, install, scope, rate skills. Electron + Vue 3 desktop app.',
+    status: 'Active - Slower Burn',
+    workspace: '~/Projects/skill-mix',
+    nextActions: ['Deduplicate run-sprint / github-next-issue', 'Publish to agentskills.io'],
+  },
+  'O1: WeDance Business': {
+    description: 'Prove WeDance can be a sustainable business with paying festival users.',
+    status: 'OKR - Q2 2026',
+    nextActions: ['50 paid festival users at EUR 1/festival', 'Document product strategy and JTBD', 'Launch SDTV homepage'],
+  },
+  'O2: Side-project System': {
+    description: 'Build a reliable system for consistent side-project progress.',
+    status: 'OKR - Q2 2026',
+    nextActions: ['Complete daily check-ins 5x/week for 8+ weeks', 'Weekly review every Saturday for 12 weeks', 'Define one additional product strategy'],
+  },
+  'Kirill Korshikov': {
+    description: 'WeDance partner (50/50 split). Co-founder of Social Dance TV. Based in Vienna.',
+    status: 'Active Partner',
+    nextActions: ['Coordinate Meneate festival validation', 'SDTV homepage collaboration'],
+  },
+};
