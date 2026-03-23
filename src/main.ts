@@ -1,80 +1,115 @@
-import { Transformer } from 'markmap-lib';
-import { Markmap } from 'markmap-view';
-import { mindmapMarkdown } from './data';
+import * as d3 from 'd3';
+import { mindmapData, projectDetails } from './data';
+import type { MindmapNode } from './data';
 
-const transformer = new Transformer();
+// Branch colors for each top-level category
+const branchColors = [
+  '#7c6ef0', // purple - Mission
+  '#4ecdc4', // teal - OKRs
+  '#ff6b6b', // coral - Projects
+  '#ffd93d', // gold - Values
+  '#6bcb77', // green - Focus
+  '#4d96ff', // blue - People
+  '#ff8b94', // pink - Decisions
+  '#c084fc', // violet - Profile
+];
+
+type HierarchyNode = d3.HierarchyPointNode<MindmapNode> & {
+  _children?: HierarchyNode[];
+  x0?: number;
+  y0?: number;
+};
+
+let svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, unknown>;
+let g: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>;
+let root: HierarchyNode;
+let treeLayout: d3.TreeLayout<MindmapNode>;
+let i = 0;
+
+const duration = 500;
+const nodeRadius = 6;
+
+function getBranchColor(d: HierarchyNode): string {
+  // Walk up to find the top-level ancestor (depth 1)
+  let node: HierarchyNode | null = d;
+  while (node && node.depth > 1) {
+    node = node.parent as HierarchyNode | null;
+  }
+  if (!node || node.depth === 0) return '#7c6ef0';
+  const idx = node.parent?.children?.indexOf(node) ?? 0;
+  return branchColors[idx % branchColors.length];
+}
+
+function radialPoint(x: number, y: number): [number, number] {
+  const angle = ((x - 90) / 180) * Math.PI;
+  return [y * Math.cos(angle), y * Math.sin(angle)];
+}
 
 function init() {
-  const { root, features } = transformer.transform(mindmapMarkdown);
+  const width = window.innerWidth;
+  const height = window.innerHeight - 52; // subtract header
 
-  const svgEl = document.getElementById('mindmap') as SVGSVGElement;
-  if (!svgEl) return;
+  svg = d3.select<SVGSVGElement, unknown>('#mindmap')
+    .attr('width', width)
+    .attr('height', height);
 
-  // Get assets (CSS/JS) needed by markmap
-  const { styles, scripts } = transformer.getUsedAssets(features);
+  g = svg.append('g')
+    .attr('transform', `translate(${width / 2},${height / 2})`);
 
-  // Load markmap CSS assets
-  if (styles) {
-    const styleEl = document.createElement('style');
-    styleEl.textContent = styles
-      .map((s) => {
-        if ('data' in s && s.data) {
-          if (s.data.href) return `@import url("${s.data.href}");`;
-          if (s.data.textContent) return s.data.textContent;
-        }
-        return '';
-      })
-      .join('\n');
-    document.head.appendChild(styleEl);
-  }
+  // Zoom behavior
+  const zoom = d3.zoom<SVGSVGElement, unknown>()
+    .scaleExtent([0.2, 4])
+    .on('zoom', (event) => {
+      g.attr('transform', `translate(${event.transform.x},${event.transform.y}) scale(${event.transform.k})`);
+    });
 
-  // Load markmap JS assets
-  if (scripts) {
-    for (const script of scripts) {
-      if ('data' in script && script.data?.src) {
-        const s = document.createElement('script');
-        s.src = script.data.src;
-        document.head.appendChild(s);
-      }
+  svg.call(zoom);
+  svg.call(zoom.transform, d3.zoomIdentity.translate(width / 2, height / 2).scale(0.85));
+
+  // Build hierarchy
+  const hierarchy = d3.hierarchy<MindmapNode>(mindmapData);
+  root = hierarchy as HierarchyNode;
+  root.x0 = 0;
+  root.y0 = 0;
+
+  // Calculate tree radius based on data
+  const maxDepth = root.height;
+  const radius = Math.min(width, height) / 2 - 120;
+  const depthSpacing = radius / maxDepth;
+
+  treeLayout = d3.tree<MindmapNode>()
+    .size([360, radius])
+    .separation((a, b) => {
+      return (a.parent === b.parent ? 1 : 2) / a.depth || 1;
+    });
+
+  // Collapse children beyond depth 2 initially
+  root.descendants().forEach((d) => {
+    const node = d as HierarchyNode;
+    if (node.depth >= 2 && node.children) {
+      node._children = node.children as HierarchyNode[];
+      node.children = undefined;
     }
-  }
+  });
 
-  const mm = Markmap.create(svgEl, {
-    autoFit: true,
-    duration: 500,
-    maxWidth: 300,
-    paddingX: 16,
-    spacingVertical: 8,
-    spacingHorizontal: 80,
-    color: (node: { depth: number }) => {
-      const colors = [
-        '#7c6ef0', // root - purple
-        '#4ecdc4', // level 1 - teal
-        '#ff6b6b', // level 2 - coral
-        '#ffd93d', // level 3 - gold
-        '#6bcb77', // level 4 - green
-        '#4d96ff', // level 5 - blue
-        '#ff8b94', // level 6 - pink
-      ];
-      return colors[node.depth % colors.length];
-    },
-  }, root);
+  update(root);
 
   // Controls
   document.getElementById('btn-fit')?.addEventListener('click', () => {
-    mm.fit();
+    svg.transition().duration(750).call(
+      zoom.transform,
+      d3.zoomIdentity.translate(width / 2, height / 2).scale(0.85),
+    );
   });
 
   document.getElementById('btn-expand')?.addEventListener('click', () => {
     expandAll(root);
-    mm.setData(root);
-    setTimeout(() => mm.fit(), 600);
+    update(root);
   });
 
   document.getElementById('btn-collapse')?.addEventListener('click', () => {
-    collapseAll(root);
-    mm.setData(root);
-    setTimeout(() => mm.fit(), 600);
+    collapseToDepth(root, 1);
+    update(root);
   });
 
   // Theme switcher
@@ -83,113 +118,213 @@ function init() {
     document.body.className = theme === 'default' ? '' : `theme-${theme}`;
   });
 
-  // Click handler for node details
-  svgEl.addEventListener('click', (e) => {
-    const target = e.target as Element;
-    const textEl = target.closest('text');
-    if (textEl) {
-      const content = textEl.textContent?.trim();
-      if (content) showDetail(content);
-    }
-  });
-
+  // Panel close
   document.getElementById('panel-close')?.addEventListener('click', () => {
     document.getElementById('detail-panel')?.classList.add('hidden');
   });
 
-  // Initial fit
-  setTimeout(() => mm.fit(), 100);
+  // Resize handler
+  window.addEventListener('resize', () => {
+    const w = window.innerWidth;
+    const h = window.innerHeight - 52;
+    svg.attr('width', w).attr('height', h);
+  });
 }
 
-function expandAll(node: { children?: unknown[]; payload?: { fold?: number } }) {
-  if (node.payload) node.payload.fold = 0;
-  if (node.children) {
-    for (const child of node.children) {
-      expandAll(child as typeof node);
-    }
+function update(source: HierarchyNode) {
+  const treeData = treeLayout(root);
+  const nodes = treeData.descendants() as HierarchyNode[];
+  const links = treeData.links() as d3.HierarchyPointLink<MindmapNode>[];
+
+  // Normalize depth spacing
+  nodes.forEach((d) => {
+    d.y = d.depth * 160;
+  });
+
+  // --- NODES ---
+  const node = g.selectAll<SVGGElement, HierarchyNode>('g.node')
+    .data(nodes, (d) => (d as HierarchyNode).data.name || String(++i));
+
+  // Enter
+  const nodeEnter = node.enter()
+    .append('g')
+    .attr('class', 'node')
+    .attr('transform', () => {
+      const p = radialPoint(source.x0 ?? 0, source.y0 ?? 0);
+      return `translate(${p[0]},${p[1]})`;
+    })
+    .on('click', (_event, d) => {
+      toggle(d);
+      update(d);
+    })
+    .on('contextmenu', (event, d) => {
+      event.preventDefault();
+      showDetail(d.data.name);
+    });
+
+  // Circle for each node
+  nodeEnter.append('circle')
+    .attr('r', 0)
+    .attr('class', (d) => d._children ? 'node-collapsed' : 'node-leaf');
+
+  // Label
+  nodeEnter.append('text')
+    .attr('dy', '0.35em')
+    .text((d) => d.data.name)
+    .attr('x', (d) => {
+      if (d.depth === 0) return 0;
+      const angle = d.x;
+      return angle < 180 ? 12 : -12;
+    })
+    .attr('text-anchor', (d) => {
+      if (d.depth === 0) return 'middle';
+      return d.x < 180 ? 'start' : 'end';
+    })
+    .attr('transform', (d) => {
+      if (d.depth === 0) return 'translate(0, -16)';
+      return d.x >= 180 ? 'rotate(180)' : '';
+    })
+    .style('cursor', 'pointer')
+    .on('click', (event, d) => {
+      event.stopPropagation();
+      showDetail(d.data.name);
+    });
+
+  // Update (merge)
+  const nodeUpdate = nodeEnter.merge(node);
+
+  nodeUpdate.transition()
+    .duration(duration)
+    .attr('transform', (d) => {
+      if (d.depth === 0) return 'translate(0,0)';
+      const p = radialPoint(d.x, d.y);
+      return `translate(${p[0]},${p[1]})`;
+    });
+
+  nodeUpdate.select('circle')
+    .attr('r', (d) => d.depth === 0 ? nodeRadius * 2 : nodeRadius)
+    .attr('class', (d) => d._children ? 'node-collapsed' : 'node-leaf')
+    .style('fill', (d) => {
+      if (d.depth === 0) return '#7c6ef0';
+      if (d._children) return getBranchColor(d);
+      return 'transparent';
+    })
+    .style('stroke', (d) => getBranchColor(d))
+    .style('stroke-width', (d) => d.depth === 0 ? 3 : 2);
+
+  nodeUpdate.select('text')
+    .style('fill', (d) => d.depth === 0 ? '#e0e0f0' : getBranchColor(d))
+    .style('font-size', (d) => {
+      if (d.depth === 0) return '18px';
+      if (d.depth === 1) return '14px';
+      return '12px';
+    })
+    .style('font-weight', (d) => d.depth <= 1 ? '600' : '400');
+
+  // Exit
+  const nodeExit = node.exit<HierarchyNode>().transition()
+    .duration(duration)
+    .attr('transform', () => {
+      const p = radialPoint(source.x ?? 0, source.y ?? 0);
+      return `translate(${p[0]},${p[1]})`;
+    })
+    .remove();
+
+  nodeExit.select('circle').attr('r', 0);
+  nodeExit.select('text').style('fill-opacity', 0);
+
+  // --- LINKS ---
+  const linkGenerator = d3.linkRadial<d3.HierarchyPointLink<MindmapNode>, d3.HierarchyPointNode<MindmapNode>>()
+    .angle((d) => (d.x / 180) * Math.PI)
+    .radius((d) => d.y);
+
+  const link = g.selectAll<SVGPathElement, d3.HierarchyPointLink<MindmapNode>>('path.link')
+    .data(links, (d) => (d.target as HierarchyNode).data.name);
+
+  // Enter
+  const linkEnter = link.enter()
+    .insert('path', 'g')
+    .attr('class', 'link')
+    .attr('d', () => {
+      const o = { x: source.x0 ?? 0, y: source.y0 ?? 0 } as d3.HierarchyPointNode<MindmapNode>;
+      return linkGenerator({ source: o, target: o } as d3.HierarchyPointLink<MindmapNode>);
+    });
+
+  // Update
+  linkEnter.merge(link).transition()
+    .duration(duration)
+    .attr('d', (d) => linkGenerator(d))
+    .style('stroke', (d) => getBranchColor(d.target as HierarchyNode))
+    .style('stroke-opacity', (d) => {
+      const target = d.target as HierarchyNode;
+      return target.depth <= 1 ? 0.6 : 0.35;
+    })
+    .style('stroke-width', (d) => {
+      const target = d.target as HierarchyNode;
+      if (target.depth === 1) return '3px';
+      if (target.depth === 2) return '2px';
+      return '1.5px';
+    });
+
+  // Exit
+  link.exit<d3.HierarchyPointLink<MindmapNode>>().transition()
+    .duration(duration)
+    .attr('d', () => {
+      const o = { x: source.x ?? 0, y: source.y ?? 0 } as d3.HierarchyPointNode<MindmapNode>;
+      return linkGenerator({ source: o, target: o } as d3.HierarchyPointLink<MindmapNode>);
+    })
+    .remove();
+
+  // Save old positions for transitions
+  nodes.forEach((d) => {
+    d.x0 = d.x;
+    d.y0 = d.y;
+  });
+}
+
+function toggle(d: HierarchyNode) {
+  if (d.children) {
+    d._children = d.children as HierarchyNode[];
+    d.children = undefined;
+  } else if (d._children) {
+    d.children = d._children;
+    d._children = undefined;
   }
 }
 
-function collapseAll(node: { depth?: number; children?: unknown[]; payload?: { fold?: number } }, depth = 0) {
-  if (!node.payload) node.payload = {};
-  node.payload.fold = depth >= 2 ? 1 : 0;
+function expandAll(node: HierarchyNode) {
+  if (node._children) {
+    node.children = node._children;
+    node._children = undefined;
+  }
   if (node.children) {
-    for (const child of node.children) {
-      collapseAll(child as typeof node, depth + 1);
-    }
+    node.children.forEach((child) => expandAll(child as HierarchyNode));
   }
 }
 
-// Project metadata for the detail panel
-const projectDetails: Record<string, { description: string; status: string; workspace?: string; nextActions?: string[] }> = {
-  'WeDance': {
-    description: 'Dance community platform (3,000 users). Meetup Planner + Festival Schedule. Nuxt 4, Vue 3, Tailwind CSS 4.',
-    status: 'Active - High Priority',
-    workspace: '~/Projects/WeDance',
-    nextActions: ['Build activities page for Meneate', 'Build payment flow (EUR 1/festival)', 'Run Playwright BDD tests'],
-  },
-  'SDTV': {
-    description: 'Platform for a videographer to sell dance festival videos. Dropbox-backed, Nuxt v4, tRPC, Prisma.',
-    status: 'Active - High Priority',
-    workspace: '~/Projects/sdtv',
-    nextActions: ['Fix Dropbox sync in prod', 'Disable Vercel deployment protection', 'Send to partner'],
-  },
-  'call-agent': {
-    description: 'Callbell -- voice AI concierge JS plugin. Visitors scan QR, get voice call, AI navigates website.',
-    status: 'Active - In Progress',
-    workspace: '~/Projects/call-agent',
-    nextActions: ['Write BDD scenarios for MVP', 'Build landing page', 'Create marketing campaign'],
-  },
-  'voice-assistant': {
-    description: 'Butler -- local HTTPS voice assistant using OpenAI Realtime API (WebRTC). AI chief of staff.',
-    status: 'Active - In Progress',
-    workspace: '~/Projects/voice-assistant',
-    nextActions: ['Externalize system prompt', 'Replace hardcoded TLS certs', 'Add README'],
-  },
-  'tasks-dashboard': {
-    description: 'Local web UI for monitoring AI coding agents. Displays tasks, streams live tmux output.',
-    status: 'Active - In Progress',
-    workspace: '~/Projects/tasks-dashboard',
-    nextActions: ['Add authentication', 'Persist suggestions to disk', 'Add full log viewer'],
-  },
-  'dancegods': {
-    description: 'Website for Cuban dance school Dance Gods Company. Nuxt 3, Tailwind, live in production.',
-    status: 'Active - In Progress',
-    workspace: '~/Projects/dancegods',
-    nextActions: ['Complete German content parity', 'Add Spanish locale', 'Post Caribbean Urban Fire recap'],
-  },
-  'razbakov.com': {
-    description: 'Personal site + portfolio. Nuxt 3, @nuxt/content, blog posts back to 2016.',
-    status: 'Active - In Progress',
-    workspace: '~/Projects/razbakov.com',
-    nextActions: ['Add blog posts aligned with OKRs', 'Audit projects section', 'Review i18n coverage'],
-  },
-  'brievcase': {
-    description: 'AI automation platform for teams. Chat with Git-connected projects from browser/Slack/Teams.',
-    status: 'Stale (16 days)',
-    workspace: '~/Projects/brievcase',
-    nextActions: ['Drive traffic to landing page', 'Define first paid customer milestone', 'Resume sprint cadence'],
-  },
-  'skill-mix': {
-    description: 'AI skill management layer. Discover, install, scope, rate skills. Electron + Vue 3 desktop app.',
-    status: 'Active - Slower Burn',
-    workspace: '~/Projects/skill-mix',
-    nextActions: ['Deduplicate run-sprint / github-next-issue', 'Publish to agentskills.io'],
-  },
-};
+function collapseToDepth(node: HierarchyNode, maxDepth: number) {
+  if (node.depth >= maxDepth && node.children) {
+    node._children = node.children as HierarchyNode[];
+    node.children = undefined;
+  }
+  if (node.children) {
+    node.children.forEach((child) => collapseToDepth(child as HierarchyNode, maxDepth));
+  }
+  if (node._children) {
+    node._children.forEach((child) => collapseToDepth(child as HierarchyNode, maxDepth));
+  }
+}
 
-function showDetail(content: string) {
+function showDetail(name: string) {
   const panel = document.getElementById('detail-panel');
   const panelContent = document.getElementById('panel-content');
   if (!panel || !panelContent) return;
 
-  // Try to match a project
-  const cleanContent = content.replace(/\*\*/g, '').split('--')[0].trim();
-  const detail = projectDetails[cleanContent];
+  const detail = projectDetails[name];
 
   if (detail) {
     panelContent.innerHTML = `
-      <h2>${cleanContent}</h2>
+      <h2>${name}</h2>
       <div class="meta">
         <span>${detail.status}</span>
         ${detail.workspace ? `<span>${detail.workspace}</span>` : ''}
@@ -202,14 +337,13 @@ function showDetail(content: string) {
         </div>
       ` : ''}
     `;
-    panel.classList.remove('hidden');
   } else {
     panelContent.innerHTML = `
-      <h2>${cleanContent}</h2>
-      <div class="description">${content}</div>
+      <h2>${name}</h2>
+      <div class="description">Click on nodes to explore. Right-click for details.</div>
     `;
-    panel.classList.remove('hidden');
   }
+  panel.classList.remove('hidden');
 }
 
 init();

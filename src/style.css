@@ -77,42 +77,78 @@ header h1 {
   border-color: var(--accent);
 }
 
+/* SVG mindmap canvas */
 #mindmap {
   flex: 1;
   width: 100%;
+  cursor: grab;
 }
 
-/* Markmap overrides for dark/dreamy theme */
-.markmap {
-  font-family: 'Inter', system-ui, sans-serif;
+#mindmap:active {
+  cursor: grabbing;
 }
 
-/* Default theme: dark with colorful nodes */
-.markmap-node text {
-  fill: var(--text) !important;
-  font-size: 14px;
+/* Node styles */
+.node circle {
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.markmap-link {
-  stroke-opacity: 0.4;
+.node circle:hover {
+  filter: drop-shadow(0 0 8px currentColor);
+}
+
+.node circle.node-collapsed {
+  fill-opacity: 0.9;
+}
+
+.node circle.node-leaf {
+  fill: transparent !important;
+}
+
+.node text {
+  cursor: pointer;
+  transition: fill-opacity 0.3s;
+}
+
+.node text:hover {
+  fill-opacity: 0.7;
+}
+
+/* Link styles */
+path.link {
+  fill: none;
+  stroke-linecap: round;
 }
 
 /* Dreamy theme */
-body.theme-dreamy .markmap-link {
-  stroke-opacity: 0.25;
+body.theme-dreamy {
+  --bg: #0d0b1a;
 }
 
-body.theme-dreamy .markmap-node circle {
+body.theme-dreamy path.link {
+  stroke-opacity: 0.2 !important;
+}
+
+body.theme-dreamy .node circle {
   filter: drop-shadow(0 0 6px rgba(124, 110, 240, 0.5));
 }
 
-/* Dark theme (high contrast) */
-body.theme-dark .markmap-node text {
-  fill: #ffffff !important;
+body.theme-dreamy .node text {
+  fill-opacity: 0.8;
 }
 
-body.theme-dark .markmap-link {
-  stroke-opacity: 0.6;
+/* Dark theme (high contrast) */
+body.theme-dark {
+  --bg: #000;
+}
+
+body.theme-dark path.link {
+  stroke-opacity: 0.7 !important;
+}
+
+body.theme-dark .node text {
+  fill: #ffffff !important;
 }
 
 /* Detail panel */
@@ -192,4 +228,14 @@ body.theme-dark .markmap-link {
   line-height: 1.5;
   color: #aaa;
   margin-left: 16px;
+}
+
+/* Help hint */
+.help-hint {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  font-size: 11px;
+  color: #555;
+  z-index: 10;
 }
