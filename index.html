@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mindmap Command Center</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <h1>Mindmap Command Center</h1>
+        <p class="subtitle">Interactive visualization of Alex Razbakov's ikigai knowledge base</p>
+      </header>
+      <div id="controls">
+        <button id="btn-fit" title="Fit to screen">Fit</button>
+        <button id="btn-expand" title="Expand all">Expand All</button>
+        <button id="btn-collapse" title="Collapse all">Collapse All</button>
+        <select id="theme-select">
+          <option value="default">Default</option>
+          <option value="dreamy">Dreamy</option>
+          <option value="dark">Dark</option>
+        </select>
+      </div>
+      <svg id="mindmap"></svg>
+      <div id="detail-panel" class="hidden">
+        <button id="panel-close">&times;</button>
+        <div id="panel-content"></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
