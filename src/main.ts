@@ -171,19 +171,6 @@ function update(source: HierarchyNode) {
   nodeEnter.append('text')
     .attr('dy', '0.35em')
     .text((d) => d.data.name)
-    .attr('x', (d) => {
-      if (d.depth === 0) return 0;
-      const angle = d.x;
-      return angle < 180 ? 12 : -12;
-    })
-    .attr('text-anchor', (d) => {
-      if (d.depth === 0) return 'middle';
-      return d.x < 180 ? 'start' : 'end';
-    })
-    .attr('transform', (d) => {
-      if (d.depth === 0) return 'translate(0, -16)';
-      return d.x >= 180 ? 'rotate(180)' : '';
-    })
     .style('cursor', 'pointer')
     .on('click', (event, d) => {
       event.stopPropagation();
@@ -213,6 +200,18 @@ function update(source: HierarchyNode) {
     .style('stroke-width', (d) => d.depth === 0 ? 3 : 2);
 
   nodeUpdate.select('text')
+    .attr('x', (d) => {
+      if (d.depth === 0) return 0;
+      return d.x < 180 ? 12 : -12;
+    })
+    .attr('text-anchor', (d) => {
+      if (d.depth === 0) return 'middle';
+      return d.x < 180 ? 'start' : 'end';
+    })
+    .attr('transform', (d) => {
+      if (d.depth === 0) return 'translate(0, -16)';
+      return '';
+    })
     .style('fill', (d) => d.depth === 0 ? '#e0e0f0' : getBranchColor(d))
     .style('font-size', (d) => {
       if (d.depth === 0) return '18px';
