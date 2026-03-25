@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  base: '/mindmap-command-center/',
+  base: '/mindmap/',
   build: {
     outDir: 'dist',
   },
